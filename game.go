@@ -66,7 +66,7 @@ func NewGame(paths []string, title string) *Game {
 		os.Exit(1)
 	}
 	imgz, err := loader.Load(paths[0])
-	do.Fuck(err)
+	do.Fuck(paths[0], err)
 	settings := make(map[uint32]*Settings, len(paths))
 	return &Game{
 		paths:     paths,
@@ -327,7 +327,7 @@ func (g *Game) prevImage(skipPulse bool) {
 
 func (g *Game) mustLoad() {
 	imgz, err := loader.Load(g.paths[g.index])
-	do.Fuck(err)
+	do.Fuck(g.paths[g.index], err)
 	g.image = imgz
 }
 

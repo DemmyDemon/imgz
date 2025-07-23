@@ -35,14 +35,14 @@ func init() {
 
 func main() {
 	wd, err := os.Getwd()
-	do.Fuck(err)
+	do.Fuck("working directory", err)
 
 	if flag.NArg() >= 1 {
 		wd = flag.Arg(0)
 	}
 
 	entries, err := os.ReadDir(wd)
-	do.Fuck(err)
+	do.Fuck("read directory content", err)
 
 	relevantFiles := make([]string, 0, len(entries))
 	for _, entry := range entries {
@@ -63,5 +63,5 @@ func main() {
 		}
 	}
 	game := NewGame(relevantFiles, wd)
-	do.Fuck(ebiten.RunGame(game))
+	do.Fuck("ebiten run", ebiten.RunGame(game))
 }

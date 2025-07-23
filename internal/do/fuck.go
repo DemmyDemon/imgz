@@ -5,9 +5,9 @@ import (
 	"os"
 )
 
-func Fuck(err error) {
+func Fuck(context string, err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "FUCK:  %s\n", err)
+		fmt.Fprintf(os.Stderr, "%s:  %s\n", context, err)
 		os.Exit(1)
 	}
 }
