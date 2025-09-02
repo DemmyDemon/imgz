@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	StepSize      = 2.5
+	StepSize      = 25.0
 	PulseInterval = 45
 )
 const (
@@ -130,7 +130,7 @@ func (g *Game) reframe() {
 	g.currentSettings()
 }
 
-func (g *Game) drawSegment(screen *ebiten.Image, start, end int, col color.RGBA) {
+func (g *Game) drawSegment(screen *ebiten.Image, start, end int, col color.Color) {
 	bottom := screen.Bounds().Dy()
 	for i := start; i <= end; i++ {
 		for j := 0; j <= 4; j++ {
@@ -141,26 +141,28 @@ func (g *Game) drawSegment(screen *ebiten.Image, start, end int, col color.RGBA)
 
 func (g *Game) drawSegments(screen *ebiten.Image) {
 	numImg := len(g.paths)
-	col := color.RGBA{128, 128, 128, 128}
+	col := color.NRGBA{255, 255, 255, 128}
 	segWidth := screen.Bounds().Dx() / numImg
 	offset := (screen.Bounds().Dx() - (segWidth * numImg)) / 2
+	segmentor := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
 	for i := 0; i < numImg; i++ {
 		if i == g.index {
 			switch g.auto {
 			case AutoModeOff:
-				col = color.RGBA{255, 0, 0, 255}
+				col = color.NRGBA{255, 0, 0, 128}
 			case AutoModeOn:
-				col = color.RGBA{0, 255, 0, 255}
+				col = color.NRGBA{0, 255, 0, 128}
 			case AutoModeRandom:
-				col = color.RGBA{255, 255, 0, 255}
+				col = color.NRGBA{255, 255, 0, 128}
 			default:
-				col = color.RGBA{255, 255, 255, 255}
+				col = color.NRGBA{255, 255, 255, 128}
 			}
 		} else if i > g.index {
-			col = color.RGBA{72, 72, 72, 128}
+			col = color.NRGBA{255, 255, 255, 64}
 		}
-		g.drawSegment(screen, offset+i*segWidth, offset+(i*segWidth)+segWidth, col)
+		g.drawSegment(segmentor, offset+i*segWidth, offset+(i*segWidth)+segWidth, col)
 	}
+	screen.DrawImage(segmentor, nil)
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
@@ -224,25 +226,36 @@ func (g *Game) Update() error {
 		do.Verbose("Auto mode: ", g.auto)
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyControl) {
+		step := StepSize
+		if ebiten.IsKeyPressed(ebiten.KeyShift) {
+			step = step / 10
+		}
 		if ebiten.IsKeyPressed(ebiten.KeyArrowUp) {
 			set := g.currentSettings()
-			set.OffsetY -= StepSize
+			set.OffsetY -= step
 			do.Verbose("Up", set.OffsetY)
 		}
 		if ebiten.IsKeyPressed(ebiten.KeyArrowDown) {
 			set := g.currentSettings()
-			set.OffsetY += StepSize
+			set.OffsetY += step
 			do.Verbose("Down", set.OffsetY)
 		}
 		if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
 			set := g.currentSettings()
-			set.OffsetX -= StepSize
+			set.OffsetX -= step
 			do.Verbose("Left", set.OffsetX)
 		}
 		if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
 			set := g.currentSettings()
-			set.OffsetX += StepSize
+			set.OffsetX += step
 			do.Verbose("Right", set.OffsetX)
+		}
+	} else {
+		if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
+			g.nextImage(inpututil.IsKeyJustPressed(ebiten.KeyArrowRight))
+		}
+		if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
+			g.prevImage(inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft))
 		}
 	}
 
@@ -261,12 +274,6 @@ func (g *Game) Update() error {
 			set.Scale = 8.0
 		}
 		do.Verbose("In", set.Scale)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
-		g.nextImage(inpututil.IsKeyJustPressed(ebiten.KeyArrowRight))
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
-		g.prevImage(inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft))
 	}
 	if g.auto > 0 {
 		if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
