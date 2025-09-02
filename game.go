@@ -48,6 +48,7 @@ type Game struct {
 	tick      int
 	lastPulse int
 	image     loader.GalleryImage
+	err       error
 	ScreenW   int
 	ScreenH   int
 	settings  map[uint32]*Settings
@@ -66,11 +67,11 @@ func NewGame(paths []string, title string) *Game {
 		os.Exit(1)
 	}
 	imgz, err := loader.Load(paths[0])
-	do.Fuck(paths[0], err)
 	settings := make(map[uint32]*Settings, len(paths))
 	return &Game{
 		paths:     paths,
 		image:     imgz,
+		err:       err,
 		settings:  settings,
 		index:     0,
 		autoDelay: 100,
@@ -78,6 +79,9 @@ func NewGame(paths []string, title string) *Game {
 }
 
 func (g *Game) currentSettings() *Settings {
+	if g.err != nil {
+		return &Settings{}
+	}
 	path := g.paths[g.index]
 	sum := getSum(path)
 	if set, ok := g.settings[sum]; ok {
@@ -173,10 +177,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	opt.GeoM.Scale(set.Scale, set.Scale)
 	opt.GeoM.Translate(set.OffsetX, set.OffsetY)
-	img := g.image.Get()
-	screen.DrawImage(img, opt)
+	if g.err == nil {
+		img := g.image.Get()
+		screen.DrawImage(img, opt)
+	} else {
+		ebitenutil.DebugPrint(screen, fmt.Sprintf("ERROR %s: %s", g.paths[g.index], g.err.Error()))
+	}
 	g.drawSegments(screen)
-	if do.Verbosity {
+	if do.Verbosity && g.err == nil {
 		switch g.auto {
 		case AutoModeOn:
 			ebitenutil.DebugPrint(screen, fmt.Sprintf("(auto %d) %d/%d %s", g.autoDelay, g.index+1, len(g.paths), g.paths[g.index]))
@@ -334,7 +342,7 @@ func (g *Game) prevImage(skipPulse bool) {
 
 func (g *Game) mustLoad() {
 	imgz, err := loader.Load(g.paths[g.index])
-	do.Fuck(g.paths[g.index], err)
+	g.err = err
 	g.image = imgz
 }
 
